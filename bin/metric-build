@@ -14,6 +14,14 @@ import hadoop, config
 
 mongodb = MongoClient('localhost', 27017).monitorat
 
+class BuildMtricJob(object):
+
+    def __init__(self):
+        pass
+
+    def run(self,):
+        pass
+
 
 def period_of(interval_type):
     if interval_type == '5m':
@@ -55,9 +63,11 @@ def parse_args(args):
     arg_parser.add_argument('-i', '--interval', required=True, help='interval type [5m|1h]')
     return arg_parser.parse_args(args)
 
-def insert_mongodb(line):
+def insert_mongodb(line, interval, timepoint):
     tsd = json.loads(line)
     tsd['dimensions']  =  SON(sorted(tsd['dimensions'].items()))  
+    tsd['timepoint'] = timepoint
+    tsd['interval'] = interval
     mongodb.tsd_5m.insert(tsd)
 
 def main():
@@ -67,7 +77,7 @@ def main():
         end = timepoint + timedelta(seconds=period_of(args.interval))
         job = hadoop.JobOnFS(config.root, timepoint, end, config.java_path, join(root_dir, config.jar), '/var/tmp/job') 
         for line in job.run_mapred():
-            insert_mongodb(line)
+            insert_mongodb(line, args.interval, timepoint)
 
 if __name__ == '__main__':
     main()
